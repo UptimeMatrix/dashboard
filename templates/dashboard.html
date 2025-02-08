@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="csrf-token" content="{{ csrf_token() }}">
+   <title>UptimeMatrix - Dashboard</title>
+   <link rel="icon" href="{{ url_for('static', filename='images/logo.png') }}" type="image/x-icon">
+   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+   <link rel="stylesheet" href="{{ url_for('static', filename='css/dash.css') }}">
+</head>
+<body>
+   <div class="wrapper">
+       <nav id="sidebar">
+           <div class="sidebar-header">
+               <a href="https://uptimematrix.com">
+                   <img src="{{ url_for('static', filename='images/wordmark.png') }}" alt="UptimeMatrix" class="logo">
+               </a>
+           </div>
+           <ul class="list-unstyled components">
+               <li class="active">
+                   <a href="#" id="homeTab" onclick="showTab('home')">
+                       <i class="bi bi-house"></i> Home
+                   </a>
+               </li>
+               <li>
+                   <a href="#" id="servicesTab" onclick="showTab('services')">
+                       <i class="bi bi-grid"></i> Services
+                   </a>
+               </li>
+               <li>
+                   <a href="#" id="maintenanceTab" onclick="showTab('maintenance')">
+                       <i class="bi bi-tools"></i> Maintenance Alerts
+                   </a>
+               </li>
+               <li>
+                   <a href="#" id="statusUpdatesTab" onclick="showTab('statusUpdates')">
+                       <i class="bi bi-bell"></i> Status Updates
+                   </a>
+               </li>
+               <li>
+                   <a href="#" id="announcementTab" onclick="showTab('announcement')">
+                       <i class="bi bi-megaphone"></i> Announcements
+                   </a>
+               </li>
+           </ul>
+       </nav>
+
+       <div id="content">
+           <nav class="navbar">
+               <div class="flash-messages">
+                   {% with messages = get_flashed_messages(with_categories=true) %}
+                       {% if messages %}
+                           {% for category, message in messages %}
+                               <div class="alert alert-{{ category }}">{{ message }}</div>
+                           {% endfor %}
+                       {% endif %}
+                   {% endwith %}
+               </div>
+               <div class="user-dropdown">
+                   <button class="btn user-btn" id="userDropdownBtn">
+                       <i class="bi bi-person-circle"></i>
+                   </button>
+                   <div class="user-dropdown-content" id="userDropdownContent">
+                       <a href="#" onclick="copyApiUrl()">
+                           <i class="bi bi-clipboard"></i> Copy API URL
+                       </a>
+                       <a href="https://github.com/uptimematrix/docs/wiki" target="_blank">
+                           <i class="bi bi-book"></i> Documentation
+                       </a>
+                       <a href="https://github.com/UptimeMatrix/dashboard/issues">
+                           <i class="bi bi-bug"></i> Report a bug
+                       </a>
+                       <a href="{{ url_for('logout') }}">
+                           <i class="bi bi-box-arrow-left"></i> Logout
+                       </a>                        
+                   </div>
+               </div>
+           </nav>
+
+           <div id="loadingSpinner" class="loading-spinner">
+               <div class="spinner"></div>
+               <p>Loading...</p>
+           </div>
+
+           <div id="main-content">
+               <div id="homeSection" class="content-section">
+                   <h1>Welcome to UptimeMatrix</h1>
+                   <p class="warning-text"><strong>Warning:</strong> UptimeMatrix is still in development, if you experience bugs please report them to us by opening an issue on <a href="https://github.com/UptimeMatrix/dashboard/issues">GitHub</a></p>
+                   <p>UptimeMatrix by <a href="https://layeredy.com">Layeredy Software</a></p>
+                   <br />              
+                   <a href="#" onclick="copyApiUrl()">
+                       <i class="bi bi-clipboard"></i> <strong>Copy API URL</strong>
+                   </a>
+                   <br />
+                   <p class="version-text">UptimeMatrix Dashboard: <strong>1.0.0 (main)</strong></p>
+               </div>
+
+               <div id="servicesSection" class="content-section" style="display: none;">
+                   <ul id="serviceList" class="service-list"></ul>
+                   <button class="btn add-category-btn" onclick="showAddCategoryModal()">
+                       <i class="bi bi-plus-lg"></i> Add Category
+                   </button>
+               </div>
+
+               <div id="maintenanceSection" class="content-section" style="display: none;">
+                   <div class="section-header">
+                       <h2>Maintenance Alerts</h2>
+                       <button class="btn toggle-btn" onclick="toggleSection('maintenanceAlerts')" id="maintenanceAlertsToggle"></button>
+                   </div>
+                   <div id="maintenanceAlertsContent">
+                       <ul id="maintenanceAlertsList" class="alerts-list"></ul>
+                       <button class="btn add-alert-btn" onclick="showAddMaintenanceModal()">
+                           <i class="bi bi-plus-lg"></i> Add Maintenance Alert
+                       </button>
+                   </div>
+               </div>
+
+               <div id="statusUpdatesSection" class="content-section" style="display: none;">
+                   <div class="section-header">
+                       <h2>Status Updates</h2>
+                       <button class="btn toggle-btn" onclick="toggleSection('statusUpdates')" id="statusUpdatesToggle"></button>
+                   </div>
+                   <div id="statusUpdatesContent">
+                       <ul id="statusUpdatesList" class="alerts-list"></ul>
+                       <button class="btn add-alert-btn" onclick="showAddStatusUpdateModal()">
+                           <i class="bi bi-plus-lg"></i> Add Status Update
+                       </button>
+                   </div>
+               </div>
+
+               <div id="announcementSection" class="content-section" style="display: none;">
+                   <div class="section-header">
+                       <h2>Announcement</h2>
+                       <button class="btn toggle-btn" onclick="toggleSection('announcementBar')" id="announcementToggle"></button>
+                   </div>
+                   <div id="announcementContent">
+                       <textarea id="announcementText" placeholder="Enter announcement text..."></textarea>
+                       <div class="modal-buttons">
+                           <button class="btn save-btn" onclick="saveAnnouncement()">Save</button>
+                       </div>
+                   </div>
+               </div>
+           </div>
+
+           <div id="modal" class="modal">
+               <div class="modal-content">
+                   <span class="close" onclick="closeModal()">&times;</span>
+                   <h3 id="modalTitle"></h3>
+                   <p id="modalMessage"></p>
+                   <div class="modal-buttons">
+                       <button class="btn confirm-btn" onclick="confirmAction()">Yes</button>
+                       <button class="btn cancel-btn" onclick="closeModal()">No</button>
+                   </div>
+               </div>
+           </div>
+
+           <div id="maintenanceModal" class="modal">
+               <div class="modal-content">
+                   <span class="close" onclick="closeMaintenanceModal()">&times;</span>
+                   <form id="maintenanceForm">
+                       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                       <h3 id="maintenanceModalTitle">Add Maintenance Alert</h3>
+                       <input type="text" id="maintenanceTitle" name="title" placeholder="Title" required>
+                       <textarea id="maintenanceMessage" name="message" placeholder="Message" required></textarea>
+                       <label for="maintenanceStart">Start Time:</label>
+                       <input type="datetime-local" id="maintenanceStart" name="start_time" required>
+                       <label for="maintenanceEnd">End Time:</label>
+                       <input type="datetime-local" id="maintenanceEnd" name="end_time" required>
+                       <div class="modal-buttons">
+                           <button type="submit" class="btn save-btn">Save</button>
+                           <button type="button" class="btn cancel-btn" onclick="closeMaintenanceModal()">Cancel</button>
+                       </div>
+                   </form>
+               </div>
+           </div>
+
+           <div id="notificationBar" class="notification-bar">
+               <div class="notification-message"></div>
+               <div class="notification-progress"></div>
+           </div>
+
+           <footer>
+               <p>&copy; 2024-2025 UptimeMatrix by Layeredy Software (<a href="https://uptimematrix.com">uptimematrix.com</a>)</p>
+           </footer>
+       </div>
+   </div>
+   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
+   <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+   <script>
+       var initialData = {{ data|tojson|safe }};
+       var csrf_token = "{{ csrf_token() }}";
+       
+       const API_ENDPOINTS = {
+           CATEGORY: "/api/category",
+           SERVICE: "/api/service",
+           SETTINGS: "/api/settings",
+           SERVICE_STATUS: "/api/service/status",
+           DATA: "/data"
+       };
+   </script>
+   <div id="addServiceModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeAddServiceModal()">&times;</span>
+        <h3>Add Service</h3>
+        <input type="text" id="newServiceName" placeholder="Enter service name">
+        <div class="modal-buttons">
+            <button class="btn cancel-btn" onclick="closeAddServiceModal()">Cancel</button>
+            <button class="btn save-btn" onclick="addServiceConfirmed()">Add</button>
+        </div>
+    </div>
+</div>
+
+<div id="addCategoryModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeAddCategoryModal()">&times;</span>
+        <h3>Add Category</h3>
+        <input type="text" id="newCategoryName" placeholder="Enter category name">
+        <div class="modal-buttons">
+            <button class="btn cancel-btn" onclick="closeAddCategoryModal()">Cancel</button>
+            <button class="btn save-btn" onclick="addCategoryConfirmed()">Add</button>
+        </div>
+    </div>
+</div>
+
+<div id="statusUpdateModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeStatusUpdateModal()">&times;</span>
+        <h3 id="statusUpdateModalTitle">Add Status Update</h3>
+        <input type="text" id="statusUpdateTitle" placeholder="Title" required>
+        <textarea id="statusUpdateMessage" placeholder="Message" required></textarea>
+        <label for="statusUpdateDate">Date:</label>
+        <input type="datetime-local" id="statusUpdateDate" required>
+        <label for="statusUpdateColor">Color:</label>
+        <input type="color" id="statusUpdateColor" value="#0d6efd">
+        <div class="modal-buttons">
+            <button class="btn save-btn" onclick="saveStatusUpdate()">Save</button>
+            <button class="btn cancel-btn" onclick="closeStatusUpdateModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<div id="warningModal" class="modal">
+    <div class="modal-content">
+        <h3>Warning</h3>
+        <p>This will reset all your current settings. Are you sure you want to continue?</p>
+        <div class="modal-buttons">
+            <button class="btn confirm-btn" onclick="performReset()">Yes</button>
+            <button class="btn cancel-btn" onclick="closeWarningModal()">No</button>
+        </div>
+    </div>
+</div>
+
+<div id="firstTimeModal" class="modal">
+    <div class="modal-content">
+        <div id="firstTimeContent"></div>
+    </div>
+</div>
+</body>
+<div id="jsonEditorSection" class="content-section" style="display: none;">
+    <textarea id="jsonEditor" style="display: none;"></textarea> 
+</html>
